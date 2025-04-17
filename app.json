@@ -15,6 +15,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.shadowif.sensors",
+      "android": {
+        "permissions": [
+          "INTERNET",
+          "ACCESS_NETWORK_STATE"
+        ]
       }
     },
     "web": {
@@ -36,6 +43,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "052d272a-ae88-4389-a088-95dcc0fc9ffb"
+      }
+    },
+    "owner": "shadowif"
   }
 }

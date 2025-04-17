@@ -1,74 +1,85 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import { useLocalSearchParams } from 'expo-router';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function App() {
+  const params = useLocalSearchParams();
+  const ipAddress = params.ipAddress as string;
+  const [wsConnected, setWsConnected] = useState(false);
+  const [temperaturedht, setTemperaturedht] = useState(0);
+  const [temperature, setTemperature] = useState(0);
+  const [humidity, setHumidity] = useState(0);
+  const [pressure, setPressure] = useState(0);
+  const [altitude, setAltitude] = useState(0);
 
-export default function HomeScreen() {
+  useEffect(() => {
+    const ws = new WebSocket(`ws://${ipAddress}/ws`);
+
+    ws.onopen = () => {
+      setWsConnected(true);
+      console.log('Connected to ESP WebSocket');
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.temperaturedht) setTemperaturedht(data.temperaturedht);
+      if (data.temperature) setTemperature(data.temperature);
+      if (data.humidity) setHumidity(data.humidity);
+      if (data.pressure) setPressure(data.pressure);
+      if (data.altitude) setAltitude(data.altitude);
+    };
+
+    ws.onclose = () => setWsConnected(false);
+
+    return () => ws.close();
+  }, [ipAddress]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <Text style={styles.title}>🌼 Cute Weather App 🌼</Text>
+      <Text style={styles.status}>
+        WebSocket: {wsConnected ? 'Connected ✅ IP: ' + ipAddress : 'Disconnected ❌'}
+      </Text>
+      <View style={styles.gridContainer}>
+        <Gauge title="Temperature in (°C)" value={wsConnected ? temperaturedht : 0} max={50} color="#006294FF" />
+        <Gauge title="Humidity (%)" value={wsConnected ? humidity : 0} max={100} color="#87CEEB" />
+        <Gauge title="Temperature out (°C)" value={wsConnected ? temperature : 0} max={50} color="#FF0080FF" />
+        <Gauge title="Pressure (hPa)" value={wsConnected ? pressure : 0} max={1200} color="#FFD700" />
+        <Gauge title="Altitude (m)" value={wsConnected ? altitude : 0} max={2200} color="#32CD32" />
+      </View>
+    </ScrollView>
   );
 }
 
+type GaugeProps = {
+  title: string;
+  value: number;
+  max: number;
+  color: string;
+};
+
+const Gauge: React.FC<GaugeProps> = ({ title, value, max, color }) => (
+  <View style={styles.gaugeContainer}>
+    <Text style={styles.label}>{title}</Text>
+    <AnimatedCircularProgress
+      size={120}
+      width={10}
+      fill={(value / max) * 100}
+      tintColor={color}
+      backgroundColor="#EEE"
+    >
+      {() => <Text style={styles.value}>{value}</Text>}
+    </AnimatedCircularProgress>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  scrollContainer: { flexGrow: 1, alignItems: 'center', paddingTop: 70, backgroundColor: '#FDEDACFF' },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#FF45A2FF', marginBottom: 20 },
+  status: { fontSize: 16, color: '#696969', marginBottom: 20 },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-evenly' },
+  gaugeContainer: { width: '44%', margin: 10, backgroundColor: '#FDF5E6', padding: 10, borderRadius: 10, alignItems: 'center' },
+  label: { fontSize: 16, fontWeight: 'bold', color: '#6A5ACD', marginBottom: 10 },
+  value: { fontSize: 18, fontWeight: 'bold', color: '#333333', marginTop: 10 },
 });
