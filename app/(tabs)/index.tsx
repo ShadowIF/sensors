@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect } from "react";
+import { StyleSheet, View, Text, ScrollView } from "react-native";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
+import { useLocalSearchParams } from "expo-router";
 
 export default function App() {
   const params = useLocalSearchParams();
@@ -14,11 +14,12 @@ export default function App() {
   const [altitude, setAltitude] = useState(0);
 
   useEffect(() => {
+    if (!ipAddress) return;
     const ws = new WebSocket(`ws://${ipAddress}/ws`);
 
     ws.onopen = () => {
       setWsConnected(true);
-      console.log('Connected to ESP WebSocket');
+      console.log("Connected to ESP WebSocket");
     };
 
     ws.onmessage = (event) => {
@@ -32,6 +33,11 @@ export default function App() {
 
     ws.onclose = () => setWsConnected(false);
 
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setWsConnected(false);
+    };
+
     return () => ws.close();
   }, [ipAddress]);
 
@@ -39,14 +45,40 @@ export default function App() {
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>🌼 Cute Weather App 🌼</Text>
       <Text style={styles.status}>
-        WebSocket: {wsConnected ? 'Connected ✅ IP: ' + ipAddress : 'Disconnected ❌'}
+        WebSocket:{" "}
+        {wsConnected ? "Connected ✅ IP: " + ipAddress : "Disconnected ❌"}
       </Text>
       <View style={styles.gridContainer}>
-        <Gauge title="Temperature in (°C)" value={wsConnected ? temperaturedht : 0} max={50} color="#006294FF" />
-        <Gauge title="Humidity (%)" value={wsConnected ? humidity : 0} max={100} color="#87CEEB" />
-        <Gauge title="Temperature out (°C)" value={wsConnected ? temperature : 0} max={50} color="#FF0080FF" />
-        <Gauge title="Pressure (hPa)" value={wsConnected ? pressure : 0} max={1200} color="#FFD700" />
-        <Gauge title="Altitude (m)" value={wsConnected ? altitude : 0} max={2200} color="#32CD32" />
+        <Gauge
+          title="Temperature in (°C)"
+          value={wsConnected ? temperaturedht : 0}
+          max={50}
+          color="#006294FF"
+        />
+        <Gauge
+          title="Humidity (%)"
+          value={wsConnected ? humidity : 0}
+          max={100}
+          color="#87CEEB"
+        />
+        <Gauge
+          title="Temperature out (°C)"
+          value={wsConnected ? temperature : 0}
+          max={50}
+          color="#FF0080FF"
+        />
+        <Gauge
+          title="Pressure (hPa)"
+          value={wsConnected ? pressure : 0}
+          max={1200}
+          color="#FFD700"
+        />
+        <Gauge
+          title="Altitude (m)"
+          value={wsConnected ? altitude : 0}
+          max={2200}
+          color="#32CD32"
+        />
       </View>
     </ScrollView>
   );
@@ -75,11 +107,37 @@ const Gauge: React.FC<GaugeProps> = ({ title, value, max, color }) => (
 );
 
 const styles = StyleSheet.create({
-  scrollContainer: { flexGrow: 1, alignItems: 'center', paddingTop: 70, backgroundColor: '#FDEDACFF' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#FF45A2FF', marginBottom: 20 },
-  status: { fontSize: 16, color: '#696969', marginBottom: 20 },
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-evenly' },
-  gaugeContainer: { width: '44%', margin: 10, backgroundColor: '#FDF5E6', padding: 10, borderRadius: 10, alignItems: 'center' },
-  label: { fontSize: 16, fontWeight: 'bold', color: '#6A5ACD', marginBottom: 10 },
-  value: { fontSize: 18, fontWeight: 'bold', color: '#333333', marginTop: 10 },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: "center",
+    paddingTop: 70,
+    backgroundColor: "#FDEDACFF",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FF45A2FF",
+    marginBottom: 20,
+  },
+  status: { fontSize: 16, color: "#696969", marginBottom: 20 },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-evenly",
+  },
+  gaugeContainer: {
+    width: "44%",
+    margin: 10,
+    backgroundColor: "#FDF5E6",
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#6A5ACD",
+    marginBottom: 10,
+  },
+  value: { fontSize: 18, fontWeight: "bold", color: "#333333", marginTop: 10 },
 });
